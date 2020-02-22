@@ -16,14 +16,16 @@
               <span></span>
               <span>No trees defined!</span>
             </Item>
-            <Item v-for="tree in trees" :key="tree.name">
+            <Item v-for="(tree, index) in trees" :key="tree.id" @click="tab = index">
               <span>{{ tree.name }}</span>
             </Item>
           </SubMenu>
         </Menu>
       </Sider>
       <Content>
-        <DecisionTree v-if="tab === 'tree'"/>
+        <!-- <div v-if="tab === `dash`">Dashboard</div> -->
+        <DecisionTreeCreation v-if="tab === 'tree'" :db="db" @create="refreshTrees"/>
+        <DecisionTree v-else :tree="trees[tab]" :key="tab"/>
       </Content>
     </Layout>
   </div>
@@ -33,6 +35,7 @@
 import "ant-design-vue/dist/antd.css";
 import { Layout, Menu, Icon } from "ant-design-vue";
 import Dexie from "dexie";
+import DecisionTreeCreation from "./components/DecisionTreeCreation";
 import DecisionTree from "./components/DecisionTree";
 
 const { Content, Header, Sider } = Layout;
@@ -41,7 +44,7 @@ const { Item, SubMenu } = Menu;
 export default {
   name: "App",
   components: {
-    DecisionTree,
+    DecisionTreeCreation,
     Content,
     Header,
     Sider,
@@ -49,25 +52,31 @@ export default {
     Item,
     Layout,
     Icon,
-    SubMenu
+    SubMenu,
+    DecisionTree
   },
   data() {
     return {
       tab: "tree",
       collapsed: true,
       menu: [
-        { label: "Dashboard", value: "dash", icon: "question-circle" },
+        // { label: "Dashboard", value: "dash", icon: "question-circle" },
         { label: "Create a tree", value: "tree", icon: "edit" }
       ],
       db: new Dexie("decision"),
       trees: []
     };
   },
+  methods: {
+    async refreshTrees() {
+      this.trees = await this.db.trees.toArray();
+    }
+  },
   async created() {
     this.db.version(1).stores({
-      trees: "++id, name, tree"
+      trees: "++id, name, firstQuestion"
     });
-    this.trees = await this.db.trees.toArray();
+    this.refreshTrees();
   }
 };
 </script>
